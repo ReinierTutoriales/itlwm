@@ -67,6 +67,64 @@ jobs:
         echo "Exportados: $(nm -gU "$BIN_PATH" | wc -l)"
         echo "Totales: $(nm -U "$BIN_PATH" | wc -l)"
 
+    - name: Generate Release Notes
+      run: |
+        cat << 'EOF' > ReleaseNotes.md
+        ### ⚠️ Requisitos de instalación (IMPORTANTE)
+
+        Este kext **no está firmado**. Para cargarlo en macOS, debes cumplir UNO de los siguientes requisitos:
+
+        #### Opción A: Desactivar SIP (recomendado para Hackintosh)
+        1. Reinicia en Recovery Mode (Cmd+R al arrancar)
+        2. Abre Terminal y ejecuta:
+           \`\`\`bash
+           csrutil disable
+           \`\`\`
+        3. Reinicia normalmente y carga el kext:
+           \`\`\`bash
+           sudo kextcache -i /
+           sudo kextutil /ruta/a/itlwm.kext
+           \`\`\`
+
+        #### Opción B: SIP parcial (más seguro)
+        En Recovery Mode, ejecuta:
+        \`\`\`bash
+        csrutil enable --without kext
+        \`\`\`
+        Esto permite cargar kexts no firmados manteniendo otras protecciones activas.
+
+        #### Opción C: OpenCore (solo Hackintosh)
+        Si usas OpenCore, agrega \`itlwm.kext\` en \`EFI/OC/Kexts/\` y actualiza \`config.plist\`.
+        No requiere desactivar SIP si \`SecureBootModel\` está configurado correctamente.
+
+        ### 🔍 Verificación post-instalación
+        \`\`\`bash
+        # Verificar carga
+        kextstat | grep -i itlwm
+
+        # Ver logs del driver
+        log show --predicate 'process == "kernel"' --last 5m | grep -i "itlwm\|wifi"
+
+        # Ver interfaces de red disponibles
+        networksetup -listallhardwareports
+        \`\`\`
+
+        ### 📦 Información del build
+        - **Versión**: ${{ env.ITLWM_VER }}
+        - **Commit**: ${{ env.SHORT_SHA }}
+        - **Configuración**: Release (optimizado para tamaño)
+        - **Compatibilidad**: macOS 10.13 - 15.x
+        - **Hardware soportado**: Intel Wi-Fi 6/6E (AX200, AX210, AX211, AX411), Wi-Fi 5 (9260, 8265, 7265), y modelos legacy.
+
+        ### 🔗 Enlaces útiles
+        - [Documentación oficial](https://github.com/OpenIntelWireless/itlwm)
+        - [Reportar issues](https://github.com/ReinierTutoriales/itlwm/issues)
+        - [Discusión en Gitter](https://gitter.im/OpenIntelWireless/itlwm)
+
+        ### 📝 Changelog reciente
+        EOF
+        git log -5 --format="- %s (%h)" >> ReleaseNotes.md
+
     - name: Pack Artifacts
       run: |
         cd $BUILD_OUTPUT
@@ -77,6 +135,7 @@ jobs:
       uses: ncipollo/release-action@v1.12.0
       with:
         prerelease: false
+        bodyFile: ReleaseNotes.md
         artifacts: "${{ env.BUILD_OUTPUT }}/*.zip"
         tag: "v${{ env.ITLWM_VER }}-release-${{ env.SHORT_SHA }}"
         token: ${{ secrets.GITHUB_TOKEN }}
