@@ -45,6 +45,17 @@ jobs:
       run: |
         xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET GIT_COMMIT=_${SHORT_SHA} CODE_SIGNING_ALLOWED=NO | xcpretty && exit ${PIPESTATUS[0]}
 
+    - name: Binary Analysis
+      run: |
+        BIN_PATH="$BUILD_OUTPUT/itlwm.kext/Contents/MacOS/itlwm"
+        echo "### 1. SIZE (Texto/Datos/BSS) ###"
+        size -m -l "$BIN_PATH" | tail -n 1
+        echo "### 2. SECTIONS (Desglose por segmento) ###"
+        otool -l "$BIN_PATH" | grep -E "sectname|size" | grep -v "0x0" | head -20
+        echo "### 3. SYMBOL COUNT (Exportados vs Locales) ###"
+        echo "Exportados: $(nm -gU "$BIN_PATH" | wc -l)"
+        echo "Totales: $(nm -U "$BIN_PATH" | wc -l)"
+
     - name: Pack Artifacts
       run: |
         cd $BUILD_OUTPUT
