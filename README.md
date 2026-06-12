@@ -2,6 +2,13 @@
 
 **An Intel Wi-Fi Adapter Kernel Extension for macOS, based on the OpenBSD Project.**
 
+> ⚠️ **Requisito obligatorio: SIP desactivado**  
+> Este kext no está firmado. Para que funcione, debes desactivar SIP (System Integrity Protection) en macOS:
+> 1. Reinicia en Recovery Mode (Cmd+R al arrancar)
+> 2. Abre Terminal y ejecuta: `csrutil disable`
+> 3. Reinicia normalmente
+> 4. Carga el kext: `sudo kextutil /ruta/a/itlwm.kext`
+
 ## Documentation
 
 We highly recommend exploring our documentation before using this Kernel Extension:
@@ -12,7 +19,7 @@ We highly recommend exploring our documentation before using this Kernel Extensi
 
 ## Download
 
-[![Download from https://github.com/OpenIntelWireless/itlwm/releases](https://img.shields.io/github/v/release/ReinierTutoriales/itlwm?label=Download)](https://github.com/ReinierTutoriales/itlwm/releases)
+[![Download from https://github.com/ReinierTutoriales/itlwm/releases](https://img.shields.io/github/v/release/ReinierTutoriales/itlwm?label=Download)](https://github.com/ReinierTutoriales/itlwm/releases)
 
 ## Questions and Issues
 
