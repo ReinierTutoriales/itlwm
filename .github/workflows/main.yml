@@ -56,6 +56,6 @@ jobs:
       with:
         prerelease: false
         artifacts: "${{ env.BUILD_OUTPUT }}/*.zip"
-        tag: "v${ITLWM_VER}-release-${SHORT_SHA}"
+        tag: "v${{ env.ITLWM_VER }}-release-${{ env.SHORT_SHA }}"
         token: ${{ secrets.GITHUB_TOKEN }}
         allowUpdates: true
