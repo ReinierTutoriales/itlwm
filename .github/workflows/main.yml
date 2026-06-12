@@ -1,78 +1,60 @@
-name: Build Optimal Kext
+name: Build itlwm (Optimized)
 
 on:
-  workflow_dispatch: # ¡Botón manual activado!
+  workflow_dispatch:
   push:
-    branches:
-      - master
+    branches: [master]
 
 env:
-  # CAMBIO CLAVE: Usamos Release en lugar de Debug
   BUILD_OUTPUT: 'build/Build/Products/Release'
+  XCODE_FLAGS: '-sdk macosx MACOSX_DEPLOYMENT_TARGET=10.12 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO'
 
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
-        fetch-depth: '5'
+        fetch-depth: 5
 
-    - name: Manage Version
+    - name: Extract Version
       run: |
         git fetch --prune --unshallow --tags || true
         GIT_SHA="$(git rev-parse --short HEAD)"
-        CUR_TAG="$(git tag -l | grep 'alpha\|beta' | tail -1)"
-        # Extraemos versión
-        eval $(grep -m 1 "MODULE_VERSION =" itlwm.xcodeproj/project.pbxproj | tr -d ';' | tr -d '\t' | tr -d " ")
+        eval $(grep -m 1 "MODULE_VERSION =" itlwm.xcodeproj/project.pbxproj | tr -d '; \t')
         echo "SHORT_SHA=$GIT_SHA" >> $GITHUB_ENV
         echo "ITLWM_VER=$MODULE_VERSION" >> $GITHUB_ENV
-        
-        if [[ -z $CUR_TAG ]]; then
-          echo "OLD_PRE_TAG=NULL" >> $GITHUB_ENV
-        else
-          echo "OLD_PRE_TAG=$CUR_TAG" >> $GITHUB_ENV
-        fi
+
+    - name: Cache MacKernelSDK
+      uses: actions/cache@v4
+      with:
+        path: MacKernelSDK
+        key: ${{ runner.os }}-mackernelsdk-${{ hashFiles('MacKernelSDK/**') }}
+        restore-keys: ${{ runner.os }}-mackernelsdk-
 
     - name: Install MacKernelSDK
       run: |
-        git clone --depth=1 https://github.com/acidanthera/MacKernelSDK.git
+        if [ ! -d "MacKernelSDK/.git" ]; then
+          git clone --depth=1 https://github.com/acidanthera/MacKernelSDK.git
+        fi
 
-    # OPTIMIZACIÓN: Compilación en modo Release (Más rápido, menos peso)
-    - name: Build itlwm (Release)
+    - name: Build itlwm.kext
       run: |
-        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build GIT_COMMIT=_${SHORT_SHA} CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} | xcpretty && exit ${PIPESTATUS[0]}
 
-    # OPTIMIZACIÓN: Compilación en modo Release
-    - name: Build AirportItlwm (Release)
+    - name: Package Artifact
       run: |
-        xcodebuild -scheme "AirportItlwm (all)" -configuration Release -derivedDataPath build GIT_COMMIT=_${SHORT_SHA} CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+        mkdir -p dist
+        cd "$BUILD_OUTPUT"
+        zip -r "../dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip" itlwm.kext
 
-    - name: Pack Artifacts
-      run: |
-        cd $BUILD_OUTPUT
-        # Empaquetamos todo lo que salga del build Release
-        zip -r itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip itlwm.kext
-        while read -r tgt ; do
-          zip -r AirportItlwm-${tgt// /_}-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip "$tgt"
-        done < <(find . -mindepth 1 -maxdepth 1 -type d -not -path "*.kext" | cut -c 3-)
-        cd -
-
-    - name: Generate Release Notes
-      run: |
-        echo '### Stable Release Build' >> ReleaseNotes.md
-        echo 'Optimized for performance (Release Mode).' >> ReleaseNotes.md
-        echo 'Unsigned Kext - Requires SIP Disabled.' >> ReleaseNotes.md
-        echo '### Changelog:' >> ReleaseNotes.md
-        git log -"5" --format="- %H %s" | sed '/^$/d' >> ReleaseNotes.md
-
-    - name: Publish Eternal Release
+    - name: Publish Release
       uses: ncipollo/release-action@v1.12.0
       with:
-        prerelease: false # Marcamos como estable, no alpha
-        bodyFile: ReleaseNotes.md
-        artifacts: "${{ env.BUILD_OUTPUT }}/*.zip"
-        tag: "v${{ env.ITLWM_VER }}-release-${{ env.SHORT_SHA }}"
+        prerelease: false
+        artifacts: "dist/*.zip"
+        tag: "v${ITLWM_VER}-release-${SHORT_SHA}"
         token: ${{ secrets.GITHUB_TOKEN }}
         allowUpdates: true
