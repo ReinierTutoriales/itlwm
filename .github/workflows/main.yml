@@ -6,6 +6,7 @@ on:
     branches: [master]
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # ← Fix Node.js 24
   BUILD_OUTPUT: 'build/Build/Products/Release'
   XCODE_FLAGS: '-sdk macosx MACOSX_DEPLOYMENT_TARGET=10.12 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO'
 
