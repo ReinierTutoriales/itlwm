@@ -43,7 +43,18 @@ jobs:
 
     - name: Build itlwm
       run: |
-        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET GIT_COMMIT=_${SHORT_SHA} CODE_SIGNING_ALLOWED=NO | xcpretty && exit ${PIPESTATUS[0]}
+        xcodebuild -scheme itlwm \
+          -configuration Release \
+          -derivedDataPath build \
+          -destination "generic/platform=macOS" \
+          MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET \
+          GIT_COMMIT=_${SHORT_SHA} \
+          CODE_SIGNING_ALLOWED=NO \
+          GCC_OPTIMIZATION_LEVEL=s \
+          DEAD_CODE_STRIPPING=YES \
+          GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
+          LLVM_LTO=YES \
+          | xcpretty && exit ${PIPESTATUS[0]}
 
     - name: Binary Analysis
       run: |
