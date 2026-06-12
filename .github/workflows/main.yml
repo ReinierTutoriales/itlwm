@@ -6,7 +6,7 @@ on:
     branches: [master]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # ← Fix Node.js 24
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   BUILD_OUTPUT: 'build/Build/Products/Release'
   XCODE_FLAGS: '-sdk macosx MACOSX_DEPLOYMENT_TARGET=10.12 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO'
 
@@ -41,9 +41,14 @@ jobs:
           git clone --depth=1 https://github.com/acidanthera/MacKernelSDK.git
         fi
 
+    - name: Verify MacKernelSDK
+      run: |
+        test -d MacKernelSDK/Headers || (echo "ERROR: MacKernelSDK no clonado" && exit 1)
+        grep -q "__ACIDANTHERA_MAC_SDK" MacKernelSDK/Headers/Availability.h || (echo "ERROR: MacKernelSDK inválido" && exit 1)
+
     - name: Build itlwm.kext
       run: |
-        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} | xcpretty && exit ${PIPESTATUS[0]}
+        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} 2>&1 | tee build.log | xcpretty || (cat build.log && exit 1)
 
     - name: Package Artifact
       run: |
