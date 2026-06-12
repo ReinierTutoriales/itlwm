@@ -7,7 +7,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  BUILD_OUTPUT: 'build/Build/Products/Release'
+  BUILD_OUTPUT: 'build/Build/Products/Release-itlwm'
   XCODE_FLAGS: '-sdk macosx MACOSX_DEPLOYMENT_TARGET=10.12 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO'
 
 jobs:
@@ -50,11 +50,24 @@ jobs:
       run: |
         xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} 2>&1 | tee build.log | xcpretty || (cat build.log && exit 1)
 
+    - name: Locate Built Kext
+      id: locate
+      run: |
+        KEXT_PATH=$(find build -name "itlwm.kext" -type d | head -1)
+        if [ -z "$KEXT_PATH" ]; then
+          echo "ERROR: itlwm.kext no encontrado en build/"
+          find build -name "*.kext" -type d
+          exit 1
+        fi
+        echo "kext_path=$KEXT_PATH" >> $GITHUB_OUTPUT
+        echo "kext_dir=$(dirname "$KEXT_PATH")" >> $GITHUB_OUTPUT
+
     - name: Package Artifact
       run: |
         mkdir -p dist
-        cd "$BUILD_OUTPUT"
-        zip -r "../dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip" itlwm.kext
+        cd "${{ steps.locate.outputs.kext_dir }}"
+        zip -r "../../../dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip" itlwm.kext
+        cd -
 
     - name: Publish Release
       uses: ncipollo/release-action@v1.12.0
