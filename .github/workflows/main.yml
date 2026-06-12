@@ -7,7 +7,6 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  BUILD_OUTPUT: 'build/Build/Products/Release-itlwm'
   XCODE_FLAGS: '-sdk macosx MACOSX_DEPLOYMENT_TARGET=10.12 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO'
 
 jobs:
@@ -41,33 +40,42 @@ jobs:
           git clone --depth=1 https://github.com/acidanthera/MacKernelSDK.git
         fi
 
-    - name: Verify MacKernelSDK
+    - name: List Available Schemes
       run: |
-        test -d MacKernelSDK/Headers || (echo "ERROR: MacKernelSDK no clonado" && exit 1)
-        grep -q "__ACIDANTHERA_MAC_SDK" MacKernelSDK/Headers/Availability.h || (echo "ERROR: MacKernelSDK inválido" && exit 1)
+        echo "=== Schemes disponibles ==="
+        xcodebuild -list -project itlwm.xcodeproj
 
     - name: Build itlwm.kext
       run: |
-        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} 2>&1 | tee build.log | xcpretty || (cat build.log && exit 1)
+        xcodebuild -scheme itlwm -configuration Release -derivedDataPath build -destination "generic/platform=macOS" $XCODE_FLAGS GIT_COMMIT=_${SHORT_SHA} 2>&1 | tee build.log
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
+          echo "=== BUILD FAILED - Full log ==="
+          cat build.log
+          exit 1
+        fi
 
-    - name: Locate Built Kext
+    - name: Locate and Validate Kext
       id: locate
       run: |
-        KEXT_PATH=$(find build -name "itlwm.kext" -type d | head -1)
+        echo "=== Buscando itlwm.kext en build/ ==="
+        find build -type d -name "*.kext" | grep -i itlwm || true
+        KEXT_PATH=$(find build -type d -name "itlwm.kext" | head -1)
         if [ -z "$KEXT_PATH" ]; then
-          echo "ERROR: itlwm.kext no encontrado en build/"
-          find build -name "*.kext" -type d
+          echo "ERROR: itlwm.kext no encontrado"
+          echo "=== Contenido de build/Build/Products ==="
+          find build/Build/Products -type d 2>/dev/null || echo "No existe Products/"
           exit 1
         fi
         echo "kext_path=$KEXT_PATH" >> $GITHUB_OUTPUT
         echo "kext_dir=$(dirname "$KEXT_PATH")" >> $GITHUB_OUTPUT
+        echo "✅ Encontrado: $KEXT_PATH"
 
     - name: Package Artifact
       run: |
         mkdir -p dist
-        cd "${{ steps.locate.outputs.kext_dir }}"
-        zip -r "../../../dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip" itlwm.kext
-        cd -
+        cp -R "${{ steps.locate.outputs.kext_path }}" ./itlwm.kext
+        zip -r "dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip" itlwm.kext
+        echo "✅ Artefacto creado: dist/itlwm-v${ITLWM_VER}-RELEASE-${SHORT_SHA}.zip"
 
     - name: Publish Release
       uses: ncipollo/release-action@v1.12.0
