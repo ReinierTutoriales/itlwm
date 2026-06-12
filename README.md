@@ -2,12 +2,19 @@
 
 **An Intel Wi-Fi Adapter Kernel Extension for macOS, based on the OpenBSD Project.**
 
-> ⚠️ **Requisito obligatorio: SIP desactivado**  
-> Este kext no está firmado. Para que funcione, debes desactivar SIP (System Integrity Protection) en macOS:
-> 1. Reinicia en Recovery Mode (Cmd+R al arrancar)
-> 2. Abre Terminal y ejecuta: `csrutil disable`
-> 3. Reinicia normalmente
-> 4. Carga el kext: `sudo kextutil /ruta/a/itlwm.kext`
+> ️ **Requisito para Hackintosh (OpenCore)**
+> Este kext no está firmado. Configura OpenCore así:
+>
+> **SecureBootModel**
+> Ruta: `Misc → Security → SecureBootModel`
+> Valor: `Disabled`
+>
+> **Deshabilitar SIP (NVRAM)**
+> Ruta: `NVRAM → Add → 7C436110-AB2A-4BBB-A880-FE41995C9F82`
+>
+> | Clave | Valor |
+> |-------|-------|
+> | `csr-active-config` | `03080000` |
 
 ## Documentation
 
@@ -21,16 +28,11 @@ We highly recommend exploring our documentation before using this Kernel Extensi
 
 [![Download from https://github.com/ReinierTutoriales/itlwm/releases](https://img.shields.io/github/v/release/ReinierTutoriales/itlwm?label=Download)](https://github.com/ReinierTutoriales/itlwm/releases)
 
-## Questions and Issues
-
-Check out our [FAQ Page](https://openintelwireless.github.io/itlwm/FAQ) for more info.
-
-If you have other questions or feedback, feel free to [![Join the chat at https://gitter.im/OpenIntelWireless/itlwm](https://badges.gitter.im/OpenIntelWireless/itlwm.svg)](https://gitter.im/OpenIntelWireless/itlwm?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
-
-We only accept bug reports in GitHub Issues, before opening an issue, you're recommended to reconfirm it with us on [Gitter](https://gitter.im/OpenIntelWireless/itlwm); once it's confirmed, please use the provided issue template.
-
 ## Credits
 
+Este proyecto es un fork de [OpenIntelWireless/itlwm](https://github.com/OpenIntelWireless/itlwm). Todos los créditos del código fuente y la ingeniería base pertenecen a:
+
+- [zxystd](https://github.com/zxystd) for developing [itlwm](https://github.com/OpenIntelWireless/itlwm)
 - [Acidanthera](https://github.com/acidanthera) for [MacKernelSDK](https://github.com/acidanthera/MacKernelSDK)
 - [Apple](https://www.apple.com) for [macOS](https://www.apple.com/macos)
 - [AppleIntelWiFi](https://github.com/AppleIntelWiFi) for [Black80211-Catalina](https://github.com/AppleIntelWiFi/Black80211-Catalina)
@@ -42,7 +44,6 @@ We only accept bug reports in GitHub Issues, before opening an issue, you're rec
 - [pigworlds](https://github.com/OpenIntelWireless/itlwm/commits?author=pigworlds) for DVM devices support, MIRA bug fixes, and Tx aggregation for MVM Gen 1 devices
 - [rpeshkov](https://github.com/rpeshkov) for [black80211](https://github.com/rpeshkov/black80211)
 - [usr-sse2](https://github.com/usr-sse2) for implementing the usage of Apple RSN Supplicant and bug fixes
-- [zxystd](https://github.com/zxystd) for developing [itlwm](https://github.com/OpenIntelWireless/itlwm)
 
 ## Acknowledgements
 
@@ -52,3 +53,6 @@ We only accept bug reports in GitHub Issues, before opening an issue, you're rec
 - [@stevezhengshiqi](https://github.com/stevezhengshiqi)
 - [@DogAndPot](https://github.com/DogAndPot) for providing resources and help for system configuration
 - [@Daliansky](https://github.com/Daliansky) for providing Wi-Fi cards
+
+---
+*Fork optimizado por [ReinierTutoriales](https://github.com/ReinierTutoriales) para integración de CI/CD, optimización de build y documentación.*
